@@ -13,7 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.uberclone.screens.UberCloneMap
 import com.example.uberclone.ui.theme.UberCloneTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint // this annotation marks an Android framework class so hilt can inject dependencies
+// this simply tell hey hilt i want to inject stuff here
+// You can put AndroidEntryPoint on any class that you want to inject dependencies into
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
