@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -41,9 +42,10 @@ fun UberCloneMap(){
 
     //getting markers from firebase
     // collecting a stateflow from your viewmodel and exposes it as a compose that the UI can react to
-    val markers by viewModel.markersInFirebase.collectAsState()
+    //val markers by viewModel.markersInFirebase.collectAsState()
 
-
+    //This prevents recreating the state reference on recomposition
+    val markers = remember { viewModel.markers }
 
 
 

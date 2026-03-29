@@ -1,5 +1,7 @@
 package com.example.uberclone.viewmodels
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.uberclone.repositories.MarkerRepository
@@ -26,10 +28,10 @@ class MapViewModel @Inject constructor(
                   onSuccess: () -> Unit,
                   onFailure: (Exception) -> Unit
     ){
-        viewModelScope.launch { //this launches a coroutine bound to the Viewmodel's lifecycle
-            // If the ViewModel is cleared , coroutine will be automatically cancelled
-            // it keep or it keeps work off the main thread, so this will be done in background thread
-            try { //try to call repository.addmarker and insert marker with the name
+        viewModelScope.launch { //this launches a coroutine bound to the View model's lifecycle
+            // If the ViewModel is cleared , coroutine will be automatically canceled
+            // it keep, or it keeps work off the main thread, so this will be done in background thread
+            try { //try to call repository.add marker and insert marker with the name
                 // if it completes successfully, call onSuccess callback to notify your UI ,
                 // if anything fails, execute the catch and call onFailure callback to notify your UI
                 markerRepository.addMarker(marker, name)
@@ -44,10 +46,18 @@ class MapViewModel @Inject constructor(
     }
     //list of markers in firestore
     //for both compose & non-compose UI
-    private val _markers = MutableStateFlow<List<DestinationMarker>>(emptyList())
-    val markersInFirebase: StateFlow<List<DestinationMarker>> = _markers.asStateFlow()
+    //private val _markers = MutableStateFlow<List<DestinationMarker>>(emptyList())
+    //val markersInFirebase: StateFlow<List<DestinationMarker>> = _markers.asStateFlow()
     // State flow itself is read only, means it can be observed but not changed,
     // this means the UI can collect markers to get updates, but it can't call dot value to modify it
+
+    //Another way to get list of markers from firebase - for compose only UI
+    //it creates an observable, mutable list of destination marker items that jetpack compose can track
+    // and update its UI(recomposition)
+    // snapshotStateList is basically a special compose collection that notifies the composition when its content changed
+    // any composable that reads 'markers' will recompose when you add, remove, update items
+    val markers : SnapshotStateList<DestinationMarker> = mutableStateListOf()
+
 
     init{
         loadMarkersFromFirestore()
@@ -57,8 +67,11 @@ class MapViewModel @Inject constructor(
         //Since getAllMarkersFromFirebase() is a suspend fun, we need to call it inside the coroutine scope
         viewModelScope.launch {
             try {
-                _markers.value = markerRepository.getAllMarkersFromFirebase()
+                val newMarkers = markerRepository.getAllMarkersFromFirebase()
+                markers.clear()
+                markers.addAll(newMarkers)
             }catch (e: Exception){
+                markers.clear()
                 e.printStackTrace()
             }
         }
