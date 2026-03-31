@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.uberclone.repositories.LocationRepository
 import com.example.uberclone.repositories.MarkerRepository
 import com.example.uberclone.utilities.DestinationMarker
 import com.google.android.gms.maps.model.LatLng
@@ -13,6 +14,7 @@ import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 // this ViewModel needs to be created by Hilt
@@ -21,7 +23,8 @@ import kotlinx.coroutines.launch
 // automatically provides its dependencies like repositories via constructor injection
 @HiltViewModel
 class MapViewModel @Inject constructor(
-    private val markerRepository: MarkerRepository
+    private val markerRepository: MarkerRepository,
+    private val locationRepository: LocationRepository
 ) : ViewModel(){
     fun addMarker(marker: LatLng,
                   name: String,
@@ -57,23 +60,47 @@ class MapViewModel @Inject constructor(
     // snapshotStateList is basically a special compose collection that notifies the composition when its content changed
     // any composable that reads 'markers' will recompose when you add, remove, update items
     val markers : SnapshotStateList<DestinationMarker> = mutableStateListOf()
-
+    private var listenerActive = false
 
     init{
         loadMarkersFromFirestore()
     }
 
     fun loadMarkersFromFirestore(){
+        if(listenerActive) return
         //Since getAllMarkersFromFirebase() is a suspend fun, we need to call it inside the coroutine scope
         viewModelScope.launch {
-            try {
-                val newMarkers = markerRepository.getAllMarkersFromFirebase()
-                markers.clear()
-                markers.addAll(newMarkers)
-            }catch (e: Exception){
-                markers.clear()
-                e.printStackTrace()
-            }
+                // here we are listening to the real time updates from a data stream firestore in an android viewModel
+                // while managing the listener state to avoid duplicate subscriptions
+                // getAllMarkersFromFirebase() cancels the previous collection if a new data arrives before the previous emission is preceded and persist
+                markerRepository.getAllMarkersFromFirebase().collectLatest {
+                    newMarkers -> // only processes the latest data, avoiding black backlog build up
+                    markers.clear() // markers.clear resets the existing list markers dot add all replaces with fresh data
+                    markers.addAll(newMarkers) // replaces with fresh data
+                }
+
+        }
+        listenerActive = true // marks the listener as active to prevent redundant subscriptions
+    }
+
+    // Get current location
+    val userLocation = locationRepository.userLocation
+    val hasLocationPermission = locationRepository.hasLocationPermission
+
+    fun startLocationUpdates(){
+        locationRepository.startLocationUpdates()
+    }
+
+    override fun onCleared() {
+        locationRepository.stopLocationUpdates()
+    }
+
+    fun onPermissionResult(granted: Boolean){
+        hasLocationPermission.value = granted
+        if(granted){
+            startLocationUpdates()
         }
     }
+
+
 }

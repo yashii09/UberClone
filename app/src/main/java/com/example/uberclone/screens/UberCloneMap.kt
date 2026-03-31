@@ -24,8 +24,8 @@ import com.google.maps.android.compose.widgets.DisappearingScaleBar
 @Composable
 fun UberCloneMap(){
 
-    val cameraPositionState = rememberCameraPositionState() // part of google mao compose library
-    //it is used to manage the camera positions and view of google map in JC
+    val cameraPositionState = rememberCameraPositionState() // part of Google Maps compose library
+    //it is used to manage the camera positions and view of Google map in JC
 
     //Testing addMarker()
     //hiltViewViewModel() : retrieved the viewModel instance , automatically uses hilt to create and inject dependencies into it
@@ -38,6 +38,13 @@ fun UberCloneMap(){
         "San Francisco",
         onSuccess = { Log.v("TAGY", "Marker added successfully") },
         onFailure = { exception ->  }
+    )
+    viewModel.addMarker(
+        LatLng(41.8719, 12.5674),
+        name = "Italy",
+        onSuccess = { Log.v("TAGY", "Marker added successfully") },
+        onFailure = { exception ->  }
+
     )
 
     //getting markers from firebase
