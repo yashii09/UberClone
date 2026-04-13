@@ -13,12 +13,12 @@ import javax.inject.Singleton
 //modules tell how to create & provide dependencies to the rest of your app
 
 @Module // this contains methods that provide dependencies
-@InstallIn(SingletonComponent::class) // this says where these dependencies live
+@InstallIn(SingletonComponent::class) // It makes provided dependencies live as long as the application
 //SingletonComponent means these dependencies exist for the lifetime of your application
 // They are singletons one shared across the app
 object FirebaseModule {
 
-    @Provides
+    @Provides //// this marks a function as a dependency provider
     @Singleton
     //Firebase Firestore fun provide Firebase Firestore and return Firebase Firestore
     fun provideFirebaseFirestore(): FirebaseFirestore {

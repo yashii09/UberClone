@@ -1,9 +1,11 @@
 package com.example.uberclone.viewmodels
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.uberclone.repositories.DirectionsRepository
 import com.example.uberclone.repositories.LocationRepository
 import com.example.uberclone.repositories.MarkerRepository
 import com.example.uberclone.utilities.DestinationMarker
@@ -24,7 +26,8 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class MapViewModel @Inject constructor(
     private val markerRepository: MarkerRepository,
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    private val directionsRepository: DirectionsRepository
 ) : ViewModel(){
     fun addMarker(marker: LatLng,
                   name: String,
@@ -102,5 +105,47 @@ class MapViewModel @Inject constructor(
         }
     }
 
+    /******************************************************************************/
+
+    // Directions API
+
+
+    // current location is stored here
+    private val _selectedLocation = MutableStateFlow<LatLng?>(null)
+    val selectedLocation: StateFlow<LatLng?> = _selectedLocation
+
+    // this updates the _selectedLocation with the new LatLng value when called
+    fun setSelectedLocation(location: LatLng){
+        _selectedLocation.value = location
+    }
+
+    //observable data stream for tracking route points
+    // Consumers can observe changes but can't modify directly
+    private val _routePoints = MutableStateFlow<List<LatLng>?>(null)
+    val routepoints: StateFlow<List<LatLng>?> = _routePoints.asStateFlow()
+
+    // designed to calculate and retrieve a route form the user's current location to a specified marker on a map
+    fun fetchRouteFromCurrentPositionToMarker(maker: LatLng){
+
+        viewModelScope.launch {
+            locationRepository.userLocation.value?.let {
+                currentLocation ->
+                val route = directionsRepository.getRoute(
+                    currentLocation,
+                    maker
+                )
+
+                if(route != null) {
+                    _routePoints.value = route
+
+                } else {
+                   Log.v("TAGY", "Route is null")
+                }
+
+            } ?: run {
+                Log.v("TAGY", "user ocation is null")
+            }
+        }
+    }
 
 }
